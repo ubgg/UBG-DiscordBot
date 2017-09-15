@@ -5,8 +5,11 @@
 
 ### To get all dependencies for this bot run the following in the command line:
 sudo apt-get update
+
 sudo apt-get install nodejs
+
 sudo apt-get install npm
+
 npm install
 
 Config files for text channel are generated upon first launch. To change default settings, go into the
