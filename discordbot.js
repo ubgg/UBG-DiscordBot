@@ -32,7 +32,7 @@ const ADMINISTRATOR = 0x00000008;
 //Bot token
 //REPLACE ME!
 //DONT REMOVE QUOTATION MARKS ON ANYTHING!! JUST INNER CONTENTS!
-client.login('REPLACE_ME_WITH_YOUR_BOT_TOKEN');
+client.login('MzUxODM4Njg3NTEzODA0ODAw.DIYbNQ.ZdDa5z68xhY_TGAPpgPGRaoT5ZA');
 
 //Firebase Credentials
 //For help go to:
@@ -42,12 +42,12 @@ client.login('REPLACE_ME_WITH_YOUR_BOT_TOKEN');
 //  4) Make sure the databaseURL matches the one shown on the website
 
 //Example - require('./credentials.json'); if it's in the same directory as this code.
-var serviceAccount = require("./REPLACE_ME_WITH_THE_FIREBASE_JSON");
+var serviceAccount = require("./discordtest-c82a1-firebase-adminsdk-2yxou-613ecfa586.json");
 
 //change the databaseURL here
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "REPLACE_ME_WITH_FIREBASE_URL"
+  databaseURL: "https://discordtest-c82a1.firebaseio.com"
 });
 //Change this to change the prefix to execute Commands
 //ex. !help or ~help
@@ -134,7 +134,14 @@ client.on('ready', () => {
 
   }
 
+  if(!fs.existsSync('guildData.json')){
+    let obj = {
+      'guilds': []
+    }
 
+    let json = JSON.stringify(obj, undefined, 2);
+    fs.writeFileSync('guildData.json', json, 'utf8');
+  }
 
 
   if (!fs.existsSync('textChannelConfig.json')) {
@@ -233,10 +240,10 @@ client.on('message', message => {
 
   if (!message.content.startsWith(PREFIX)) return;
 
-
-  let noprefix = message.content.split(' ').slice(1);
-  var argstring = noprefix.join(' ');
-  var args = argstring.split(' ');
+  //ex. !buycolor red otherstuff
+  let noprefix = message.content.split(' ').slice(1); //result: red otherstuff
+  var argstring = noprefix.join(' ');//result: red otherstuff
+  var args = argstring.split(' ');//result : args[0] = red , args[1] = otherstuff
   var isAdmin = message.member.permissions.has(ADMINISTRATOR);
 
   if(message.content.startsWith(PREFIX + 'help')){
@@ -248,6 +255,103 @@ client.on('message', message => {
     );
   }else
 
+  if(message.content.startsWith(PREFIX + 'createguild')){
+    if(args[0] == '') return;
+    let inGuild = false;
+    let keys;
+    var allusers = ref.orderByChild('user').once('value', function(snapshot) {
+      var users = snapshot.val().user;
+      keys = Object.keys(users);
+
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i] == message.author.id) {
+          if(!(users[keys[i]]['guild'] == 'not-a-guild-member')){
+            inGuild = true;
+          }
+        }
+      }
+
+      if(inGuild){
+        message.reply('You must leave your current guild before you can create one.');
+        return;
+      }
+
+      let guildFile = fs.readFileSync('guildData.json');
+      let guildData = JSON.parse(guildFile);
+      for(let i = 0; i < guildData.guilds.length; i++){
+        if(args[0] == guildData.guilds[i].name){
+          message.reply('A guild with that name already exists.');
+          return;
+        }
+      }
+
+
+      let newGuild = {
+        'name': args[0],
+        'ownerid': message.author.id,
+        'ownername': message.author.username,
+        'tokens': 0,
+        'members': []
+      }
+      let newMember = {
+        'name': message.author.username,
+        'id': message.author.id
+      }
+      newGuild.members.push(newMember);
+      guildData.guilds.push(newGuild);
+      let tempuser = ref.child('user');
+      let me = tempuser.child(message.author.id);
+      me.update({
+        'guild': args[0]
+      });
+
+
+      let json = JSON.stringify(guildData, undefined, 2);
+      fs.writeFileSync('guildData.json', json, 'utf8');
+    });
+  }else
+  //DOME
+  if(message.content.startsWith(PREFIX + 'joinguild')){
+
+  }else
+
+  if(message.content.startsWith(PREFIX + 'leaveguild')){
+    var users = ref.child('user');
+    var me = users.child(message.author.id);
+
+    let guildFile = fs.readFileSync('guildData.json');
+    let guildData = JSON.parse(guildFile);
+
+    var allusers = ref.orderByChild('user').once('value', function(snapshot) {
+      var users = snapshot.val().user;
+      var keys = Object.keys(users);
+
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i] == message.author.id) {
+          let myGuild = users[keys[i]].guild;
+          for(var i = 0; i < guildData.guilds.length; i++){
+            if(guildData.guilds[i].name == myGuild){
+              for(var j = 0; j < guildData.guilds[i].members.length; j++){
+                if(guildData.guilds[i].members[j].id == message.author.id){
+                  guildData.guilds[i].members.splice(j, 1);
+                  me.update({
+                    'guild': 'not-a-guild-member'
+                  });
+                  let json = JSON.stringify(guildData, undefined, 2);
+                  fs.writeFileSync('guildData.json', json, 'utf8');
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+
+
+  }else
+
   if (message.content.startsWith(PREFIX + 'addme')) {
     var exists = false;
 
@@ -256,7 +360,7 @@ client.on('message', message => {
       var keys = Object.keys(users);
 
       for (var i = 0; i < keys.length; i++) {
-        if (keys[i] == message.author.username) {
+        if (keys[i] == message.author.id) {
           message.reply('You\'ve already been added');
           exists = true;
         }
@@ -270,7 +374,8 @@ client.on('message', message => {
       me.update({
         username: message.author.username,
         points: 0,
-        rank: 1
+        rank: 1,
+        guild: 'not-a-guild-member'
       });
     }
   } else
@@ -282,7 +387,6 @@ client.on('message', message => {
 
       for (var i = 0; i < keys.length; i++) {
         if (keys[i] == message.author.id) {
-          console.log(users[keys[i]]['points']);
           message.reply(users[keys[i]]['points'] + ' tokens');
         }
       }
@@ -387,6 +491,7 @@ client.on('message', message => {
               'points': currentPoints,
               'rank': currentRank
             });
+            message.channel.send(message.author.username + ' Just upgraded to rank ' + currentRank + '!');
             console.log(chalk.bgCyan.white(message.author.username + ' Just upgraded to rank ' + currentRank + '!'));
           }
           return;
