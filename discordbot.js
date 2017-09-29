@@ -98,7 +98,7 @@ client.on('ready', () => {
 
   let voiceChannels = client.channels;
 
-  timer = client.setInterval(tokenTimer, TOKEN_INTERVAL);
+  //timer = client.setInterval(tokenTimer, TOKEN_INTERVAL);
 
   function tokenTimer() {
     for (var [key] of voiceChannels) {
@@ -279,7 +279,7 @@ client.on('message', message => {
       let guildFile = fs.readFileSync('guildData.json');
       let guildData = JSON.parse(guildFile);
       for(let i = 0; i < guildData.guilds.length; i++){
-        if(args[0] == guildData.guilds[i].name){
+        if(args[0].toLowerCase() == guildData.guilds[i].name.toLowerCase()){
           message.reply('A guild with that name already exists.');
           return;
         }
@@ -291,6 +291,7 @@ client.on('message', message => {
         'ownerid': message.author.id,
         'ownername': message.author.username,
         'tokens': 0,
+        'rank': 1,
         'members': []
       }
       let newMember = {
@@ -315,12 +316,108 @@ client.on('message', message => {
 
   }else
 
+  if(message.content.startsWith(PREFIX + 'guild')){
+    if(args[0] == ''){
+      var GuildHelp = ("Proper usage: " + PREFIX + "guild OPTION" + '\n' +
+                      "-OPTIONS-" + '\n' +
+                      "promote(Owner Only) - promotes another user to owner" + '\n' +
+                      "rankup(OwnerOnly) - Increases the rank of the guild for a cost" + '\n' +
+                      "donate - donates tokens to the guild bank" + '\n' +
+                      "stats [guildName] - shows stats of [guildName]")
+      message.reply(GuildHelp);
+    }
+    let guildFile = fs.readFileSync('guildData.json');
+    let guildData = JSON.parse(guildFile);
+
+    if(args[0] == 'promote'){
+      for(let i = 0; i < guildData.guilds.length; i++){
+        if(guildData.guilds[i].ownerid == message.author.id){
+          var allusers = ref.orderByChild('user').once('value', function(snapshot) {
+            var users = snapshot.val().user;
+            var keys = Object.keys(users);
+
+            for (var j = 0; j < keys.length; j++) {
+              if (users[keys[j]].username == args[1]) {
+                if(users[keys[j]].guild == guildData.guilds[i].name){
+                  guildData.guilds[i].ownerid = keys[j];
+                  guildData.guilds[i].ownername = users[keys[j]].username;
+                  let json = JSON.stringify(guildData, undefined, 2);
+                  fs.writeFileSync('guildData.json', json, 'utf8');
+                  continue;
+                }else {
+                  message.reply('That user is not a part of your guild');
+                }
+              }
+            }
+          });
+        }else {
+          message.reply('You must be the owner of the guild to use this command')
+        }
+      }
+    }else
+    if(args[0] == 'dotate'){
+
+      var allusers = ref.orderByChild('user').once('value', function(snapshot) {
+        var users = snapshot.val().user;
+        var keys = Object.keys(users);
+
+        for (var i = 0; i < keys.length; i++) {
+          if (keys[i] == message.author.id) {
+            if(parseInt(users[keys[i]].points) >= parseInt(args[1])){
+              //Donate Money -
+              //Remove money from guild Member
+              let currency = parseInt(users[keys[i]].points);
+              let newbalance = currency - parseInt(args[1]);
+              var thisuser = ref.child('/user/' + message.author.id);
+              thisuser.update({
+                'points': newbalance
+              });
+              //Add money to guild Treasury
+              for(let j = 0; j < guildData.guilds.length; j++){
+                if(guildData.guilds[j].name == users[keys[i]].guild){
+                  guildData.guilds[j].tokens = guildData.guilds[j].tokens + args[1];
+                }
+              }
+              let json = JSON.stringify(guildData, undefined, 2);
+              fs.writeFileSync('guildData.json', json, 'utf8');
+            }else{
+              //You dont have that much money
+              message.reply('You don\'t Have that much');
+            }
+          }
+        }
+      });
+
+    }else
+    if(args[0] == 'stats'){
+      for(var i = 0; i < guildData.guilds.length; i++){
+        if(guildData.guilds[i].name.toLowerCase() == args[1].toLowerCase()){
+          message.reply('Guild: ' + guildData.guilds[i].name + '\n' +
+          'Total Members: ' + guildData.guilds[i].ownername + '\n' +
+          'Total Members: ' + guildData.guilds[i].members.length + '\n' +
+          'Tokens: ' + guildData.guilds[i].tokens);
+        }
+      }
+
+
+    }else
+    if(args[0] == 'rankup'){
+
+    }
+  }else
+
   if(message.content.startsWith(PREFIX + 'leaveguild')){
     var users = ref.child('user');
     var me = users.child(message.author.id);
 
     let guildFile = fs.readFileSync('guildData.json');
     let guildData = JSON.parse(guildFile);
+
+    for(var i = 0; i < guildData.guilds.length; i++){
+      if(message.author.id == guildData.guilds[i].ownerid){
+        message.reply('You are the current Guild Leader of ' + guildData.guilds[i].name +'. You must promote a new leader or disband the guild.')
+      }
+    }
 
     var allusers = ref.orderByChild('user').once('value', function(snapshot) {
       var users = snapshot.val().user;
