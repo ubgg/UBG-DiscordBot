@@ -32,7 +32,7 @@ const ADMINISTRATOR = 0x00000008;
 //Bot token
 //REPLACE ME!
 //DONT REMOVE QUOTATION MARKS ON ANYTHING!! JUST INNER CONTENTS!
-client.login('MzUxODM4Njg3NTEzODA0ODAw.DIYbNQ.ZdDa5z68xhY_TGAPpgPGRaoT5ZA');
+client.login(/*BOTTOKENHERE*/);
 
 //Firebase Credentials
 //For help go to:
@@ -42,12 +42,12 @@ client.login('MzUxODM4Njg3NTEzODA0ODAw.DIYbNQ.ZdDa5z68xhY_TGAPpgPGRaoT5ZA');
 //  4) Make sure the databaseURL matches the one shown on the website
 
 //Example - require('./credentials.json'); if it's in the same directory as this code.
-var serviceAccount = require("./discordtest-c82a1-firebase-adminsdk-2yxou-613ecfa586.json");
+var serviceAccount = require(/*JsonHere*/);
 
 //change the databaseURL here
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://discordtest-c82a1.firebaseio.com"
+  databaseURL: /*URLHERE*/
 });
 //Change this to change the prefix to execute Commands
 //ex. !help or ~help
@@ -644,9 +644,10 @@ client.on('message', message => {
     console.log(chalk.redBright('Periodic Rewards stopped.'));
 
   }
-
-  if(deleteCommandAfterUse){
-    message.delete();
+  if(message.channel.type != 'dm'){
+    if(deleteCommandAfterUse){
+      message.delete();
+    }
   }
 
 
